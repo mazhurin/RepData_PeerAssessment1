@@ -5,13 +5,29 @@ output:
     keep_md: true
 ---
 
-
 ## Loading and preprocessing the data
 
+Load the data from the csv file and convert the date variable to the date type
+```{r echo = TRUE}
+data <- read.csv("activity.csv")
+
+data[,2] <- as.Date(data[,2], "%Y-%m-%d")
+```
 
 
 ## What is mean total number of steps taken per day?
+```{r}
+library(dplyr)
+grouped_by_date <- group_by(data, date)
+total_steps <- summarise(grouped_by_date, total_steps = sum(steps, na.rm = TRUE))
 
+hist(total_steps$total_steps, 50, col = "red")
+
+mean(total_steps$total_steps)
+
+median(total_steps$total_steps)
+
+```
 
 
 ## What is the average daily activity pattern?
