@@ -7,35 +7,122 @@ output:
 
 ## Loading and preprocessing the data
 
-Load the data from the csv file and convert the date variable to the date type
+Load the data from the csv file 
 ```{r echo = TRUE}
-data <- read.csv("activity.csv")
+activity <- read.csv("activity.csv")
+```
 
-data[,2] <- as.Date(data[,2], "%Y-%m-%d")
+Convert the date variable to the date type
+```{r echo = TRUE}
+activity[,2] <- as.Date(activity[,2], "%Y-%m-%d")
+```
+
+Convert the interval variable to the hour.min 
+```{r echo=TRUE}
+activity[,3] <- activity[,3] %/% 100 + (activity[,3] %% 100) / 100
 ```
 
 
 ## What is mean total number of steps taken per day?
-```{r}
+
+Let's ignore NA values for this part
+```{r echo = TRUE} 
+activity_no_na = na.omit(activity)
+```
+
+Load dplyr package and summarise activities for each day
+```{r echo = TRUE} 
 library(dplyr)
-grouped_by_date <- group_by(data, date)
-total_steps <- summarise(grouped_by_date, total_steps = sum(steps, na.rm = TRUE))
+activity_per_day <- summarise(group_by(activity_no_na, date), steps = sum(steps))
+```
 
-hist(total_steps$total_steps, 50, col = "red")
+Calculate a **histogram** of total number of steps taken per day.
+```{r echo = TRUE} 
+hist(activity_per_day$steps, 30, col = "red", main = "Histogram of total number of steps per day ",
+     xlab = "Number of steps per day")
+```
 
-mean(total_steps$total_steps)
+Calculate the **mean** of steps taken per day
+```{r echo = TRUE} 
+mean_without_na <- mean(activity_per_day$steps)
+mean_without_na
+```
 
-median(total_steps$total_steps)
-
+Calculate the **median** of steps taken per day
+```{r echo = TRUE} 
+median_without_na <- median(activity_per_day$steps)
+median_without_na
 ```
 
 
 ## What is the average daily activity pattern?
+Summorise the interval activities and calculate the mean for each interval.
+Plot the average daily activity pattern.
+```{r echo=TRUE}
+daily_pattern <- summarise(group_by(activity, interval), steps = mean(steps, na.rm = TRUE))
+plot(daily_pattern$interval, daily_pattern$steps, type = 'l', col = "red", xlab = "Time of the day", 
+     ylab = "Number of steps", main = "Average daily activity pattern")
+```
 
-
+Find the 5-min interval wich, on average, contains the **maximum number of steps**.
+```{r echo=TRUE}
+daily_pattern[which.max(daily_pattern$steps), "interval"]
+```
 
 ## Imputing missing values
+Calculate **the total number of missing values** 
+```{r echo = TRUE}
+nrow(activity[is.na(activity$steps),])
+```
 
+Correct the missing values with average value for this interval
+```{r echo = TRUE}
+activity_corrected <- activity
+for (i in 1:nrow(activity_corrected)) {
+  if(is.na(activity_corrected[i, 'steps'])){
+    activity_corrected[i, 'steps'] <- daily_pattern[daily_pattern$interval == activity_corrected[i, 'interval'], 'steps']
+  }
+}
+```
+
+Summarise activities for each day for corrected dataset
+```{r echo = TRUE} 
+library(dplyr)
+activity_per_day_corrected <- summarise(group_by(activity_corrected, date), steps = sum(steps))
+```
+
+Calculate a **histogram** of total number of steps taken per day for corrected dataset.
+```{r echo = TRUE} 
+hist(activity_per_day_corrected$steps, 30, col = "red", main = "Histogram of total number of steps per day (CORRECTED)",
+     xlab = "Number of steps per day")
+```
+
+Let's look again on the histogram without NA
+```{r echo = TRUE} 
+hist(activity_per_day$steps, 30, col = "red", main = "Histogram of total number of steps per day (ORIGINAL)",
+     xlab = "Number of steps per day")
+```
+
+Calculate the **mean** of steps taken per day for corrected dataset
+```{r echo = TRUE} 
+mean(activity_per_day_corrected$steps)
+```
+The mean without na:
+```{r echo = TRUE} 
+mean_without_na
+```
+
+Calculate the **median** of steps taken per day for corrected dataset
+```{r echo = TRUE} 
+median(activity_per_day_corrected$steps)
+```
+The median without na:
+```{r echo = TRUE} 
+median_without_na
+```
+
+As we can see, the values for mean and median total number of steps taken per day have not changed a lot.
+The average stayed the same, the median changed a bit.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
